@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Production deployment
 
-## Getting Started
+Every push to `main` runs `.github/workflows/ci-main.yaml`. The workflow lints
+in GitHub Actions, connects over SSH, runs `git pull --ff-only origin main` in
+`~/apps/somos-cardoso`, installs dependencies, builds, and starts or reloads the
+`somos-cardoso` PM2 process on port 3000. It then checks HTTP health. Each run
+pulls the latest `main` available when deployment starts.
 
-First, run the development server:
+Before the first deployment:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Provision a Linux server with Git, Bash, Node.js 22, npm, curl, and PM2
+   (`npm install -g pm2`). Make these commands available to the SSH user;
+   the workflow also loads `~/.nvm/nvm.sh` if present.
+2. Clone the repository's `main` branch into `~/apps/somos-cardoso` as the
+   deployment user. Configure that user's Git credentials or read-only deploy
+   key so `git pull` works without prompts, including trusted Git host keys
+   when using SSH. Keep tracked files clean and the checkout on `main`.
+   Add the Actions deployment public SSH key to `~/.ssh/authorized_keys`.
+3. Add repository Actions secrets: `USER` (SSH username), `SERVER` (host/IP),
+   `SSH-KEY` (private key), and `SSH_KNOWN_HOSTS` (the server's OpenSSH known-hosts
+   entry, verified against the server's host key through a trusted channel).
+   SSH uses the default port 22.
+4. If needed, create `~/apps/somos-cardoso/.env.production` on the server for
+   build-time and runtime environment values. Keep this file untracked.
+5. Configure your domain, HTTPS, and reverse proxy to port 3000. Run `pm2 startup`
+   as the deployment user and execute the command it prints so saved processes
+   return after a reboot. The workflow runs `pm2 save` after successful deploys.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deployment updates and builds the checkout in place, which can affect the running
+app during installation or building. Failed deployments require manual recovery;
+the workflow does not automatically roll back.
