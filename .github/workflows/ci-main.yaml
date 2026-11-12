@@ -1,33 +1,19 @@
-name: ci-main
+name: CI Main
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: read
 
-concurrency:
-  group: production
-  cancel-in-progress: false
-
 jobs:
-  deploy:
-    name: Deploy
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-
-    env:
-      SSH_USER: ${{ secrets.SSH_USER }}
-      SSH_PRIVATE_KEY: ${{ secrets['SSH_PRIVATE_KEY'] }}
-      SERVER_IP: ${{ secrets.SERVER_IP }}
-      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-
     steps:
-      - name: Checkout
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -35,69 +21,14 @@ jobs:
           node-version: '22'
           cache: npm
 
-      - name: Install and lint
-        run: |
-          npm ci
-          npm run lint
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Configure SSH
-        shell: bash
-        run: |
-          set -euo pipefail
-          : "${SSH_USER:?Set the USER secret}"
-          : "${SSH_PRIVATE_KEY:?Set the SSH-KEY secret}"
-          : "${SERVER_IP:?Set the SERVER secret}"
-          : "${SSH_KNOWN_HOSTS:?Set the SSH_KNOWN_HOSTS secret}"
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Lint
+        run: npm run lint
 
-      - name: Build and deploy
-        shell: bash
-        run: |
-          set -euo pipefail
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            "${SSH_USER}@${SERVER_IP}" "bash -s" <<'REMOTE'
-          set -euo pipefail
-          # Make an existing nvm installation available to non-interactive SSH.
-          export NVM_DIR="$HOME/.nvm"
-          if [ -s "$NVM_DIR/nvm.sh" ]; then
-            . "$NVM_DIR/nvm.sh"
-          fi
-          command -v node
-          command -v npm
-          command -v pm2
+      - name: Run tests when configured
+        run: npm test --if-present
 
-          app_dir="$HOME/apps/somos-cardoso"
-          cd "$app_dir"
-          # Require a clean main checkout; never overwrite server-side changes.
-          test "$(git branch --show-current)" = main
-          git diff --quiet
-          git diff --cached --quiet
-          GIT_TERMINAL_PROMPT=0 git pull --ff-only origin main
-          npm ci --include=dev
-          npm run build
-
-          export NODE_ENV=production
-          node <<'NODE'
-          const fs = require('node:fs');
-          fs.writeFileSync('ecosystem.config.json', JSON.stringify({
-            apps: [{
-              name: 'somos-cardoso',
-              cwd: process.cwd(),
-              script: 'node_modules/next/dist/bin/next',
-              args: ['start', '-p', '3000'],
-              env: { NODE_ENV: 'production' }
-            }]
-          }));
-          NODE
-          pm2 startOrReload ecosystem.config.json --update-env
-          curl --fail --silent --show-error --retry 10 --retry-delay 3 \
-            --retry-connrefused --max-time 10 http://127.0.0.1:3000/ > /dev/null
-          pm2 save
-          REMOTE
-
-      - name: Remove SSH credentials
-        if: always()
-        run: rm -f ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Verify production build
+        run: npm run build
