@@ -1,3 +1,19 @@
+# Somos Cardoso
+
+Responsive family home, authentication and Secret Santa pages. Requires the companion Kotlin/Spring Boot API and MySQL for real accounts and draws.
+
+## Develop locally
+
+1. Follow the API repository docs/SECRET_SANTA_SETUP.md to start MySQL and the backend on port8080.
+2. Copy .env.example to .env.local, then npm ci and npm run dev.
+3. Open http://localhost:3000/auth. Register at least two players with WhatsApp numbers to create the first draw.
+
+API requests use same-origin session cookies and CSRF tokens. Google sign-in is enabled only when the API is configured. WhatsApp delivery is disabled until Meta credentials and a template are configured.
+
+The API_INTERNAL_URL rewrite target is captured during next build. For the existing Dockerfile, pass --build-arg API_INTERNAL_URL=http://api:8080 (the default) when frontend and API share a Docker network. Never place provider secrets in NEXT_PUBLIC variables.
+
+Checks: npm run lint, npx tsc --noEmit, npm run build, npm test.
+
 ## Production deployment
 
 Every push to `main` runs `.github/workflows/ci-main.yaml`. The workflow lints
@@ -29,3 +45,15 @@ Before the first deployment:
 Deployment updates and builds the checkout in place, which can affect the running
 app during installation or building. Failed deployments require manual recovery;
 the workflow does not automatically roll back.
+
+## Languages
+
+The authentication, home and Secret Santa pages support Brazilian Portuguese
+(default) and English. Use the PT-BR / EN buttons to switch without losing form
+values. The preference is saved in this browser and applies across pages; dates,
+labels, accessibility text and known API error messages follow that preference.
+
+Phone forms send `phoneNumber` as entered, including national numbers such as
+`(11) 99999-9999`. The API validates and normalizes the value, using country code
+`+55` when omitted. Account responses expose the UUID `userId` separately from
+the numeric player `id`, which remains the identifier used in draws.

@@ -6,6 +6,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+ARG API_INTERNAL_URL=http://api:8080
+ENV API_INTERNAL_URL=$API_INTERNAL_URL
 RUN npm run build
 
 FROM node:22-bookworm-slim AS runner

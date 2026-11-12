@@ -1,69 +1,178 @@
-import Image from "next/image";
-
+"use client";
+import { useLanguage } from "@/components/language";
+import Link from "next/link";
+import { useEffect, useState, type FormEvent } from "react";
+import { useSession } from "@/components/session";
+import { Shell, Loading } from "@/components/shell";
+import { GiftArt, Icon } from "@/components/icons";
+import { api, errorMessage } from "@/lib/api";
+import { formatDate } from "@/lib/helpers";
+import type { Player, Santa } from "@/lib/types";
 export default function Home() {
+  const { t, locale } = useLanguage();
+  const { user, setUser, error } = useSession();
+  const [groups, setGroups] = useState<Santa[]>([]),
+    [loadError, setLoadError] = useState(""),
+    [notice, setNotice] = useState(""),
+    [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (user)
+      api<Santa[]>("/secret-santas")
+        .then(setGroups)
+        .catch((err) => setLoadError(errorMessage(err)));
+  }, [user]);
+  async function savePhone(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setNotice("");
+    try {
+      const data = new FormData(event.currentTarget);
+      setUser(
+        await api<Player>("/auth/me", {
+          method: "PUT",
+          body: JSON.stringify({ phoneNumber: data.get("phone") }),
+        }),
+      );
+      setNotice("Your WhatsApp number is saved.");
+    } catch (err) {
+      setNotice(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+  if (!user) return <Loading error={t(error)} />;
+  const upcoming = groups
+    .filter((g) => g.isParticipant && g.status === "SCHEDULED")
+    .sort((a, b) => Date.parse(a.drawAt) - Date.parse(b.drawAt));
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <Shell user={user}>
+      <section className="page-heading">
+        <span className="eyebrow">{t("OUR FAMILY, TOGETHER")}</span>
+        <h1>
+          {" "}
+          {t("Good to have you here,")} <br />
+          <em>{user.name.split(" ")[0]}.</em>
+        </h1>
+        <p className="muted">
+          {" "}
+          {t("A shared space for the little things that bring us closer.")}{" "}
+        </p>
+      </section>
+      <section className="home-hero">
+        <div>
+          <span className="eyebrow light">
+            {t("A NEW TRADITION STARTS HERE")}
+          </span>
+          <h2>
+            {" "}
+            {t("A little mystery.")} <br />
+            {t("A whole lot of")} <em>{t("love.")}</em>
+          </h2>
+          <p>
+            {" "}
+            {t(
+              "Our Secret Santa is here. Bring the family together, pick a draw date, and let the surprises begin.",
+            )}{" "}
           </p>
+          <Link className="button cream" href="/secret-santa">
+            {" "}
+            {t("Let’s make some Christmas magic")}{" "}
+            <Icon name="arrow" size={19} />
+          </Link>
+          <span className="hero-footnote">
+            {" "}
+            {t("ONE FAMILY. COUNTLESS REASONS TO CELEBRATE.")}{" "}
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        <GiftArt />
+      </section>
+      <div className="home-grid">
+        <section className="panel">
+          <span className="section-kicker">
+            <Icon name="calendar" /> {t("ON THE FAMILY CALENDAR")}{" "}
+          </span>
+          <h2>{t("The next little surprise.")}</h2>
+          {loadError ? (
+            <p className="error" role="alert">
+              {t(loadError)}
+            </p>
+          ) : upcoming.length ? (
+            <>
+              <p className="large-text">{upcoming[0].name}</p>
+              <p className="muted">
+                {t("Draws")} {formatDate(upcoming[0].drawAt, locale)}
+              </p>
+              <Link className="text-link" href="/secret-santa">
+                {" "}
+                {t("See your Secret Santas")} <Icon name="arrow" size={17} />
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="muted">
+                {" "}
+                {t(
+                  "No upcoming draws for you just yet. Start a new tradition or join the family’s next Secret Santa.",
+                )}{" "}
+              </p>
+              <Link className="text-link" href="/secret-santa">
+                {" "}
+                {t("Find your next gathering")} <Icon name="arrow" size={17} />
+              </Link>
+            </>
+          )}
+        </section>
+        <section className="panel profile-panel">
+          <span className="section-kicker">
+            <Icon name="people" /> {t("YOUR PLACE IN THE FAMILY")}{" "}
+          </span>
+          <h2>{t("Keep the surprises coming.")}</h2>
+          <p className="muted">
+            {" "}
+            {t(
+              "Your private match arrives on WhatsApp. Keep your number up to date.",
+            )}{" "}
+          </p>
+          <form onSubmit={savePhone}>
+            <label htmlFor="phone">{t("WhatsApp number")}</label>
+            <div className="inline-form">
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                minLength={10}
+                maxLength={24}
+                inputMode="tel"
+                defaultValue={user.phoneNumber || ""}
+                placeholder="(11) 99999-9999"
+              />
+              <button className="button" disabled={saving}>
+                {saving ? t("Saving…") : t("Save")}
+              </button>
+            </div>
+            <small>
+              {" "}
+              {t(
+                "Include your area code. The country code is optional (default: +55).",
+              )}{" "}
+            </small>
+            {notice && (
+              <p role="status" className="form-notice">
+                {t(notice)}
+              </p>
+            )}
+          </form>
+        </section>
+      </div>
+      <div className="family-note">
+        <Icon name="leaf" size={30} />
+        <p>
+          {" "}
+          {t("The best part of every plan?")} <br />
+          <em>{t("The people we share it with.")}</em>
+        </p>
+      </div>
+    </Shell>
   );
 }
