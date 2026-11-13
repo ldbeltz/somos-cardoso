@@ -20,9 +20,13 @@ export default function SecretSantaPage() {
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [copied, setCopied] = useState(false);
   const [now, setNow] = useState(0);
   const detailId = detail?.id;
+  const inviteUrl = detail?.inviteToken
+    ? `/secret-santa/invite/${encodeURIComponent(detail.inviteToken)}`
+    : "";
   async function reload() {
     const [s, p] = await Promise.all([
       api<Santa[]>("/secret-santas"),
@@ -68,9 +72,10 @@ export default function SecretSantaPage() {
     const form = event.currentTarget;
     try {
       const values = new FormData(form);
+      const drawAt = String(values.get("drawAt"));
       const payload = createPayload(
         String(values.get("name")),
-        String(values.get("drawAt")),
+        locale === "pt-BR" ? parseBrazilianDateTime(drawAt) : drawAt,
         selected,
         user.id,
       );
@@ -78,12 +83,15 @@ export default function SecretSantaPage() {
         method: "POST",
         body: JSON.stringify(payload),
       });
+      const authenticatedDetail = await api<SantaDetail>(
+        `/secret-santas/${created.id}`,
+      );
       await reload();
-      setDetail(created);
+      setDetail(authenticatedDetail);
       form.reset();
       setSelected([]);
       setNotice(
-        "Your Secret Santa is ready. The draw will happen automatically at the scheduled time.",
+        "Your Secret Santa is ready. Share the invite link so more people can join.",
       );
     } catch (err) {
       setError(errorMessage(err));
@@ -268,6 +276,36 @@ export default function SecretSantaPage() {
                       date: formatDate(detail.drawAt, locale),
                     })}
               </p>
+              {detail.inviteToken && (
+                <div className="invite-share">
+                  <label htmlFor="invite-url">{t("Invite more people")}</label>
+                  <div className="invite-url-row">
+                    <input
+                      id="invite-url"
+                      readOnly
+                      value={inviteUrl}
+                      onFocus={(event) => event.currentTarget.select()}
+                    />
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(
+                            new URL(inviteUrl, window.location.origin).toString(),
+                          );
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        } catch {
+                          setError("Could not copy the invite link. Select and copy it instead.");
+                        }
+                      }}
+                    >
+                      {copied ? t("Copied") : t("Copy link")}
+                    </button>
+                  </div>
+                </div>
+              )}
               {detail.myRecipient ? (
                 <div className="recipient">
                   <span className="eyebrow">
@@ -342,7 +380,39 @@ export default function SecretSantaPage() {
             <label>
               {" "}
               {t("When should we draw?")}{" "}
-              <input name="drawAt" type="datetime-local" required />
+              {locale === "pt-BR" ? (
+                <input
+                  name="drawAt"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="dd/mm/aaaa hh:mm"
+                  aria-label={t("Date and time (dd/mm/yyyy HH:mm)")}
+                  maxLength={16}
+                  pattern="\d{2}/\d{2}/\d{4} \d{2}:\d{2}"
+                  onChange={(event) => {
+                    const digits = event.currentTarget.value
+                      .replace(/\D/g, "")
+                      .slice(0, 12);
+                    const parts = [
+                      digits.slice(0, 2),
+                      digits.slice(2, 4),
+                      digits.slice(4, 8),
+                      digits.slice(8, 10),
+                      digits.slice(10, 12),
+                    ];
+                    event.currentTarget.value =
+                      parts[0] +
+                      (digits.length > 2 ? "/" + parts[1] : "") +
+                      (digits.length > 4 ? "/" + parts[2] : "") +
+                      (digits.length > 8 ? " " + parts[3] : "") +
+                      (digits.length > 10 ? ":" + parts[4] : "");
+                  }}
+                  required
+                />
+              ) : (
+                <input name="drawAt" type="datetime-local" required />
+              )}
               <small>
                 {t("In your local time. The draw happens automatically.")}
               </small>
@@ -352,7 +422,7 @@ export default function SecretSantaPage() {
               <p className="muted field-help">
                 {" "}
                 {t(
-                  "Choose at least one other player. You’re already included.",
+                  "You’re already included. Invite others now or share a link after creating.",
                 )}{" "}
               </p>
               <div className="participant-picker">
@@ -409,7 +479,7 @@ export default function SecretSantaPage() {
             </fieldset>
             <button
               className="button full"
-              disabled={busy || !user.phoneNumber || selected.length < 1}
+              disabled={busy || !user.phoneNumber}
             >
               {busy ? t("One moment…") : t("Create Secret Santa")}
               <Icon name="arrow" size={18} />
@@ -427,4 +497,27 @@ export default function SecretSantaPage() {
       </div>
     </Shell>
   );
+}
+
+function parseBrazilianDateTime(value: string): string {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})$/.exec(value);
+  if (!match) return "";
+  const [, day, month, year, hour, minute] = match;
+  const date = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+  );
+  if (
+    date.getFullYear() !== Number(year) ||
+    date.getMonth() !== Number(month) - 1 ||
+    date.getDate() !== Number(day) ||
+    date.getHours() !== Number(hour) ||
+    date.getMinutes() !== Number(minute)
+  ) {
+    return "";
+  }
+  return `${year}-${month}-${day}T${hour}:${minute}`;
 }

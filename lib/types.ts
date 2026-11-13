@@ -15,6 +15,7 @@ export type Santa = {
   isParticipant: boolean;
 };
 export type SantaDetail = Santa & {
+  inviteToken: string;
   players: { id: number; name: string }[];
   myRecipient: { id: number; name: string } | null;
   notificationStatus: "PENDING" | "SENDING" | "SENT" | null;

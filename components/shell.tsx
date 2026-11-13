@@ -7,15 +7,16 @@ import type { Player } from "@/lib/types";
 import { initials } from "@/lib/helpers";
 import { api, errorMessage } from "@/lib/api";
 import { Icon } from "./icons";
+import { CardosoMark } from "./cardoso-mark";
 export function Brand() {
   const { t } = useLanguage();
   return (
     <Link className="brand" href="/" aria-label={t("Somos Cardoso home")}>
       <span className="brand-symbol">
-        <Icon name="leaf" size={26} />
+        <CardosoMark size={72} />
       </span>
       <span>
-        somos <strong>cardoso</strong>
+        família <strong>cardoso</strong>
         <small>{t("A PLACE FOR OUR FAMILY")}</small>
       </span>
     </Link>
@@ -98,6 +99,7 @@ export function Shell({
           {t("Made for the moments that matter")}{" "}
           <span aria-hidden="true">♡</span>
         </span>
+        <span>{t("Created with love by Humberto Lima")}</span>
       </footer>
     </>
   );

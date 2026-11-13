@@ -16,8 +16,6 @@ export function createPayload(
 ) {
   const playerIds = [...new Set([creatorId, ...selectedIds])];
   if (!name.trim()) throw new Error("Give your Secret Santa a name.");
-  if (playerIds.length < 2)
-    throw new Error("Choose at least one other player.");
   const date = new Date(localDate);
   if (!Number.isFinite(date.getTime()) || date.getTime() <= now)
     throw new Error("Choose a draw date and time in the future.");

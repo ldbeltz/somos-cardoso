@@ -87,6 +87,7 @@ export const ptBR: Record<string, string> = {
   "Sign out": "Sair",
   "Different stories. One family.": "Histórias diferentes. Uma só família.",
   "Made for the moments that matter": "Feito para os momentos que importam",
+  "Created with love by Humberto Lima": "Criado com carinho por Humberto Lima",
   "Try again": "Tentar novamente",
   "Opening our family space…": "Abrindo o espaço da nossa família…",
   "A LITTLE CHRISTMAS MAGIC": "UM POUQUINHO DA MAGIA DO NATAL",
@@ -138,11 +139,34 @@ export const ptBR: Record<string, string> = {
   "Give it a name": "Dê um nome ao amigo secreto",
   "Christmas with the Cardosos": "Natal com os Cardoso",
   "When should we draw?": "Quando será o sorteio?",
+  "Date and time (dd/mm/yyyy HH:mm)": "Data e hora (dd/mm/aaaa HH:mm)",
   "In your local time. The draw happens automatically.":
     "No seu horário local. O sorteio acontece automaticamente.",
   "Who’s in the circle?": "Quem vai participar?",
   "Choose at least one other player. You’re already included.":
     "Escolha pelo menos mais um participante. Você já está na lista.",
+  "You’re already included. Invite others now or share a link after creating.":
+    "Você já está incluído. Convide outras pessoas agora ou compartilhe o link depois de criar.",
+  "Invite more people": "Convide mais pessoas",
+  "Copy link": "Copiar link",
+  Copied: "Copiado",
+  "Could not copy the invite link. Select and copy it instead.":
+    "Não foi possível copiar o convite. Selecione e copie o link.",
+  "Your Secret Santa is ready. Share the invite link so more people can join.":
+    "Seu amigo secreto está pronto. Compartilhe o convite para que mais pessoas participem.",
+  "The draw is scheduled for {date}.": "O sorteio está marcado para {date}.",
+  "Join the Secret Santa": "Participe do amigo secreto",
+  "WhatsApp phone number": "Número de WhatsApp",
+  "Include your country code so we can send your match.":
+    "Inclua o código do país para receber o nome do seu amigo secreto.",
+  "Join the draw": "Participar do sorteio",
+  "Joining…": "Entrando…",
+  "You’re in! You’ve joined this Secret Santa.":
+    "Você está participando deste amigo secreto!",
+  "This phone number is already registered for this event.":
+    "Este número de telefone já está cadastrado neste evento.",
+  "You’re invited.": "Você foi convidado.",
+  "Loading invite…": "Carregando convite…",
   "You · always included": "Você · já está na lista",
   "Ready for a surprise": "Tudo pronto para a surpresa",
   "Needs a WhatsApp number": "Precisa adicionar o WhatsApp",

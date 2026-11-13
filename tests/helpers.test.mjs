@@ -13,11 +13,10 @@ test("draw creation includes creator once and converts local time to an instant"
   assert.deepEqual(result.playerIds, [1, 2]);
   assert.equal(result.drawAt, new Date("2030-12-20T19:30").toISOString());
 });
-test("requires a different second player", () =>
-  assert.throws(
-    () => createPayload("Christmas", "2030-12-20T19:30", [1, 1], 1, 0),
-    /one other player/,
-  ));
+test("allows the creator to start alone and includes them only once", () => {
+  const result = createPayload("Christmas", "2030-12-20T19:30", [1], 1, 0);
+  assert.deepEqual(result.playerIds, [1]);
+});
 test("rejects past and invalid dates", () => {
   assert.throws(() => createPayload("Christmas", "bad", [2], 1, 0), /future/);
   assert.throws(
