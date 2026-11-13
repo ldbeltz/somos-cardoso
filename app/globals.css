@@ -765,6 +765,104 @@ form .button {
 .create-panel form {
   margin-top: 27px;
 }
+.draw-date-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: 10px;
+  align-items: end;
+  margin-top: 7px;
+}
+.draw-date-picker-control label {
+  display: block;
+  margin: 0 0 7px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+.draw-date-field {
+  margin-bottom: 18px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.draw-date-field > small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.draw-date-field .field-label {
+  display: block;
+}
+.draw-date-picker [data-scope="date-picker"][data-part="control"] {
+  position: relative;
+}
+.draw-date-picker [data-scope="date-picker"][data-part="input"] {
+  margin-top: 0;
+  padding-right: 42px;
+}
+.draw-date-picker [data-scope="date-picker"][data-part="trigger"] {
+  position: absolute;
+  top: 50%;
+  right: 9px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--forest);
+  background: transparent;
+  transform: translateY(-50%);
+}
+.draw-time-field {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+.draw-time-field label {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+.draw-time-input {
+  width: 100% !important;
+  min-height: 46px;
+  display: block;
+  margin-top: 7px;
+}
+.tp-ui-wrapper.somos-timepicker {
+  --tp-bg: var(--white);
+  --tp-surface: #efeee3;
+  --tp-surface-hover: #dedfd4;
+  --tp-input-bg: #efeee3;
+  --tp-primary: var(--forest);
+  --tp-on-primary: var(--white);
+  --tp-primary-container: #dce9df;
+  --tp-on-primary-container: var(--ink);
+  --tp-text: var(--ink);
+  --tp-text-secondary: var(--muted);
+  --tp-text-type-time: var(--ink);
+  --tp-text-icon: var(--forest);
+  --tp-outline: var(--forest);
+  --tp-outline-variant: var(--line);
+  --tp-border: var(--line);
+  --tp-wheel-highlight-bg: rgb(36 76 61 / 12%);
+  --tp-wheel-highlight-border: var(--line);
+  --tp-wheel-text-color: var(--ink);
+  --tp-wheel-selected-color: var(--forest);
+  --tp-popover-shadow: 0 12px 32px rgb(36 63 53 / 16%);
+  --tp-popover-radius: 8px;
+  --tp-border-radius: 8px;
+}
+.draw-calendar {
+  z-index: 50;
+  padding: 14px;
+  color: var(--ink);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgb(36 63 53 / 16%);
+}
 .create-panel fieldset {
   padding: 0;
   border: 0;
@@ -872,6 +970,10 @@ form .button {
 .badge.drawn {
   background: #e4eddf;
   color: #426739;
+}
+.badge.not-drawn {
+  background: #ece9e6;
+  color: #665b54;
 }
 .member-label {
   font-size: 10px;

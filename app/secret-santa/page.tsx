@@ -2,10 +2,11 @@
 import { useLanguage } from "@/components/language";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useSession } from "@/components/session";
 import { Shell, Loading } from "@/components/shell";
 import { Icon } from "@/components/icons";
+import { DrawDatePicker } from "@/components/draw-date-picker";
 import { api, errorMessage, ApiError } from "@/lib/api";
 import { createPayload, formatDate, initials } from "@/lib/helpers";
 import type { Player, Santa, SantaDetail } from "@/lib/types";
@@ -23,10 +24,17 @@ export default function SecretSantaPage() {
     [loading, setLoading] = useState(true),
     [copied, setCopied] = useState(false);
   const [now, setNow] = useState(0);
+  const [drawAt, setDrawAt] = useState("");
   const detailId = detail?.id;
   const inviteUrl = detail?.inviteToken
     ? `/secret-santa/invite/${encodeURIComponent(detail.inviteToken)}`
     : "";
+  const origin = useSyncExternalStore(
+    () => () => {},
+    () => window.location.origin,
+    () => "",
+  );
+  const inviteLink = inviteUrl && origin ? new URL(inviteUrl, origin).toString() : inviteUrl;
   async function reload() {
     const [s, p] = await Promise.all([
       api<Santa[]>("/secret-santas"),
@@ -72,10 +80,9 @@ export default function SecretSantaPage() {
     const form = event.currentTarget;
     try {
       const values = new FormData(form);
-      const drawAt = String(values.get("drawAt"));
       const payload = createPayload(
         String(values.get("name")),
-        locale === "pt-BR" ? parseBrazilianDateTime(drawAt) : drawAt,
+        drawAt,
         selected,
         user.id,
       );
@@ -89,6 +96,7 @@ export default function SecretSantaPage() {
       await reload();
       setDetail(authenticatedDetail);
       form.reset();
+      setDrawAt("");
       setSelected([]);
       setNotice(
         "Your Secret Santa is ready. Share the invite link so more people can join.",
@@ -214,11 +222,13 @@ export default function SecretSantaPage() {
                 >
                   <div className="group-card-top">
                     <span
-                      className={`badge ${group.status === "DRAWN" ? "drawn" : ""}`}
+                      className={`badge ${group.status === "DRAWN" ? "drawn" : group.status === "NOT_DRAWN" ? "not-drawn" : ""}`}
                     >
                       {group.status === "DRAWN"
                         ? t("Draw complete")
-                        : t("Upcoming draw")}
+                        : group.status === "NOT_DRAWN"
+                          ? t("Not drawn")
+                          : t("Upcoming draw")}
                     </span>
                     {group.isParticipant && (
                       <span className="member-label">{t("You’re in")}</span>
@@ -272,9 +282,11 @@ export default function SecretSantaPage() {
               <p className="muted">
                 {detail.status === "DRAWN"
                   ? t("The names have been drawn.")
-                  : t("The draw is set for {date}.", {
-                      date: formatDate(detail.drawAt, locale),
-                    })}
+                  : detail.status === "NOT_DRAWN"
+                    ? t("This draw was not completed. No matches or notifications were sent.")
+                    : t("The draw is set for {date}.", {
+                        date: formatDate(detail.drawAt, locale),
+                      })}
               </p>
               {detail.inviteToken && (
                 <div className="invite-share">
@@ -283,7 +295,7 @@ export default function SecretSantaPage() {
                     <input
                       id="invite-url"
                       readOnly
-                      value={inviteUrl}
+                      value={inviteLink}
                       onFocus={(event) => event.currentTarget.select()}
                     />
                     <button
@@ -306,7 +318,7 @@ export default function SecretSantaPage() {
                   </div>
                 </div>
               )}
-              {detail.myRecipient ? (
+              {detail.status === "DRAWN" && detail.myRecipient ? (
                 <div className="recipient">
                   <span className="eyebrow">
                     {t("YOU’RE GIVING A GIFT TO")}
@@ -323,6 +335,11 @@ export default function SecretSantaPage() {
                             "Your WhatsApp notification is pending. Your match is safely saved here.",
                           )}
                   </small>
+                </div>
+              ) : detail.status === "NOT_DRAWN" ? (
+                <div className="sealed-match">
+                  <Icon name="gift" size={28} />
+                  <p>{t("This draw was not completed. No matches or notifications were sent.")}</p>
                 </div>
               ) : (
                 <div className="sealed-match">
@@ -377,46 +394,19 @@ export default function SecretSantaPage() {
                 placeholder={t("Christmas with the Cardosos")}
               />
             </label>
-            <label>
+            <div className="draw-date-field">
               {" "}
-              {t("When should we draw?")}{" "}
-              {locale === "pt-BR" ? (
-                <input
-                  name="drawAt"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="dd/mm/aaaa hh:mm"
-                  aria-label={t("Date and time (dd/mm/yyyy HH:mm)")}
-                  maxLength={16}
-                  pattern="\d{2}/\d{2}/\d{4} \d{2}:\d{2}"
-                  onChange={(event) => {
-                    const digits = event.currentTarget.value
-                      .replace(/\D/g, "")
-                      .slice(0, 12);
-                    const parts = [
-                      digits.slice(0, 2),
-                      digits.slice(2, 4),
-                      digits.slice(4, 8),
-                      digits.slice(8, 10),
-                      digits.slice(10, 12),
-                    ];
-                    event.currentTarget.value =
-                      parts[0] +
-                      (digits.length > 2 ? "/" + parts[1] : "") +
-                      (digits.length > 4 ? "/" + parts[2] : "") +
-                      (digits.length > 8 ? " " + parts[3] : "") +
-                      (digits.length > 10 ? ":" + parts[4] : "");
-                  }}
-                  required
-                />
-              ) : (
-                <input name="drawAt" type="datetime-local" required />
-              )}
+              <span className="field-label">{t("When should we draw?")}</span>
+              <DrawDatePicker
+                locale={locale}
+                value={drawAt}
+                onChange={setDrawAt}
+                label={t("Date and time (dd/mm/yyyy HH:mm)")}
+              />
               <small>
                 {t("In your local time. The draw happens automatically.")}
               </small>
-            </label>
+            </div>
             <fieldset>
               <legend>{t("Who’s in the circle?")}</legend>
               <p className="muted field-help">
@@ -497,27 +487,4 @@ export default function SecretSantaPage() {
       </div>
     </Shell>
   );
-}
-
-function parseBrazilianDateTime(value: string): string {
-  const match = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})$/.exec(value);
-  if (!match) return "";
-  const [, day, month, year, hour, minute] = match;
-  const date = new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute),
-  );
-  if (
-    date.getFullYear() !== Number(year) ||
-    date.getMonth() !== Number(month) - 1 ||
-    date.getDate() !== Number(day) ||
-    date.getHours() !== Number(hour) ||
-    date.getMinutes() !== Number(minute)
-  ) {
-    return "";
-  }
-  return `${year}-${month}-${day}T${hour}:${minute}`;
 }

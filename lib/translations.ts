@@ -110,6 +110,7 @@ export const ptBR: Record<string, string> = {
     "Crie o primeiro amigo secreto e dê à família um motivo a mais para celebrar.",
   "Draw complete": "Sorteio realizado",
   "Upcoming draw": "Sorteio agendado",
+  "Not drawn": "Não sorteado",
   "You’re in": "Você está participando",
   players: "participantes",
   "Open Secret Santa": "Ver amigo secreto",
@@ -117,6 +118,8 @@ export const ptBR: Record<string, string> = {
   "YOUR SECRET SANTA": "SEU AMIGO SECRETO",
   "Close Secret Santa details": "Fechar detalhes do amigo secreto",
   "The names have been drawn.": "Os nomes já foram sorteados.",
+  "This draw was not completed. No matches or notifications were sent.":
+    "Este sorteio não foi realizado. Nenhum amigo secreto foi definido ou notificado.",
   "The draw is set for {date}.": "O sorteio está marcado para {date}.",
   "The draw is set for": "O sorteio está marcado para",
   "YOU’RE GIVING A GIFT TO": "VOCÊ VAI PRESENTEAR",

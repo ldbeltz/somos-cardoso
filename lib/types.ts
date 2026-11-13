@@ -9,7 +9,7 @@ export type Santa = {
   id: number;
   name: string;
   drawAt: string;
-  status: "SCHEDULED" | "DRAWN";
+  status: "SCHEDULED" | "DRAWN" | "NOT_DRAWN";
   creatorId: number;
   playerCount: number;
   isParticipant: boolean;
