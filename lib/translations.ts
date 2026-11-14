@@ -169,6 +169,8 @@ export const ptBR: Record<string, string> = {
   "This phone number is already registered for this event.":
     "Este número de telefone já está cadastrado neste evento.",
   "You’re invited.": "Você foi convidado.",
+  "Registration is closed for this Secret Santa.":
+    "As inscrições para este amigo secreto já foram encerradas.",
   "Loading invite…": "Carregando convite…",
   "You · always included": "Você · já está na lista",
   "Ready for a surprise": "Tudo pronto para a surpresa",

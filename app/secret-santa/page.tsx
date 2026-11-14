@@ -279,16 +279,16 @@ export default function SecretSantaPage() {
                 </button>
               </div>
               <h2 id="detail-title">{detail.name}</h2>
-              <p className="muted">
-                {detail.status === "DRAWN"
-                  ? t("The names have been drawn.")
-                  : detail.status === "NOT_DRAWN"
-                    ? t("This draw was not completed. No matches or notifications were sent.")
+              {detail.status !== "NOT_DRAWN" && (
+                <p className="muted">
+                  {detail.status === "DRAWN"
+                    ? t("The names have been drawn.")
                     : t("The draw is set for {date}.", {
                         date: formatDate(detail.drawAt, locale),
                       })}
-              </p>
-              {detail.inviteToken && (
+                </p>
+              )}
+              {detail.status === "SCHEDULED" && detail.inviteToken && (
                 <div className="invite-share">
                   <label htmlFor="invite-url">{t("Invite more people")}</label>
                   <div className="invite-url-row">

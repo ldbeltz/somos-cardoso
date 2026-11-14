@@ -6,13 +6,15 @@ import { LanguageSwitcher, useLanguage } from "@/components/language";
 import { ApiError, api, errorMessage } from "@/lib/api";
 import { formatDate } from "@/lib/helpers";
 
-type Invite = { name: string; drawAt: string };
+type InviteStatus = "SCHEDULED" | "DRAWN" | "NOT_DRAWN";
+type Invite = { name: string; drawAt: string; status: InviteStatus };
 
 export default function SecretSantaInvite({ token }: { token: string }) {
   const { t, locale } = useLanguage();
   const [invite, setInvite] = useState<Invite | null>(null);
   const [error, setError] = useState("");
   const [joined, setJoined] = useState(false);
+  const [registrationClosed, setRegistrationClosed] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -40,11 +42,20 @@ export default function SecretSantaInvite({ token }: { token: string }) {
       setInvite(result);
       setJoined(true);
     } catch (err) {
-      setError(
-        err instanceof ApiError && err.status === 409
-          ? "This phone number is already registered for this event."
-          : errorMessage(err),
-      );
+      const message = errorMessage(err);
+      if (/registration has closed/i.test(message)) {
+        setRegistrationClosed(true);
+        setError("");
+      } else if (err instanceof ApiError && err.status === 409) {
+        if (/already registered/i.test(message)) {
+          setError("This phone number is already registered for this event.");
+        } else {
+          setRegistrationClosed(true);
+          setError("");
+        }
+      } else {
+        setError(message);
+      }
     } finally {
       setBusy(false);
     }
@@ -72,11 +83,16 @@ export default function SecretSantaInvite({ token }: { token: string }) {
                   date: formatDate(invite.drawAt, locale),
                 })}
               </p>
+              {invite.status !== "SCHEDULED" || registrationClosed ? (
+                <p className="muted" role="status">
+                  {t("Registration is closed for this Secret Santa.")}
+                </p>
+              ) : null}
               {joined ? (
                 <p className="success" role="status">
                   {t("You’re in! You’ve joined this Secret Santa.")}
                 </p>
-              ) : (
+              ) : invite.status === "SCHEDULED" && !registrationClosed ? (
                 <form onSubmit={join}>
                   <h2>{t("Join the Secret Santa")}</h2>
                   <label>
@@ -111,7 +127,7 @@ export default function SecretSantaInvite({ token }: { token: string }) {
                     {busy ? t("Joining…") : t("Join the draw")}
                   </button>
                 </form>
-              )}
+              ) : null}
             </>
           ) : (
             <>
