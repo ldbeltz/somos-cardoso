@@ -710,6 +710,9 @@ form .button {
   gap: 36px;
   padding-bottom: 65px;
 }
+.santa-grid.player-view {
+  grid-template-columns: minmax(0, 1fr);
+}
 .section-title {
   display: flex;
   align-items: center;
@@ -734,6 +737,13 @@ form .button {
   border: 1px dashed #cfd5c5;
   border-radius: 5px;
   padding: 50px 25px;
+}
+.santa-grid.player-view > section,
+.santa-grid.player-view .player-empty-state {
+  width: 100%;
+}
+.player-empty-state h3 {
+  margin-bottom: 0;
 }
 .empty-state h3 {
   font-size: 25px;
@@ -987,17 +997,31 @@ form .button {
   align-items: center;
   gap: 8px;
 }
+.joinable-description {
+  min-height: 28px;
+  margin: 22px 0 13px;
+}
 .group-card-bottom {
   border-top: 1px solid #ebeee4;
   padding-top: 16px;
   margin-top: 18px;
 }
 .detail-panel {
-  background: #fffefa;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  margin-top: 25px;
-  padding: 28px;
+  background: transparent;
+  border-top: 1px solid #e5e7dc;
+  margin-top: 24px;
+  padding: 24px 0 0;
+}
+.detail-open-animation {
+  transform-origin: top center;
+  animation: detail-open 380ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+@keyframes detail-open {
+  from { opacity: 0; transform: translateY(-10px); clip-path: inset(0 0 100% 0); }
+  to { opacity: 1; transform: translateY(0); clip-path: inset(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .detail-open-animation { animation: none; }
 }
 .detail-panel .section-title {
   justify-content: space-between;
@@ -1038,6 +1062,24 @@ form .button {
 .recipient small {
   font-size: 10px;
   color: #d8dfcf;
+}
+.secret-word {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 22px 0;
+  padding: 16px 20px;
+  border: 1px solid #d8dccd;
+  background: #f7f5eb;
+  border-radius: 4px;
+}
+.secret-word .eyebrow { margin: 0; }
+.secret-word strong {
+  color: var(--forest);
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
 }
 .sealed-match {
   background: #f3f1e6;
@@ -1083,6 +1125,10 @@ form .button {
   border-radius: 50%;
   font-size: 9px;
 }
+.chip-remove { border: 0; background: transparent; color: #9d5846; cursor: pointer; font-size: 17px; line-height: 1; padding: 0 2px; }
+.admin-controls { display: grid; gap: 14px; border-top: 1px solid #e4e5da; padding-top: 16px; margin-top: 18px; }
+.admin-controls form, .admin-controls label { display: grid; gap: 9px; }
+.admin-controls select { width: 100%; padding: 12px; border: 1px solid #d8dbd0; border-radius: 4px; background: white; }
 .danger {
   color: #9d5846;
 }

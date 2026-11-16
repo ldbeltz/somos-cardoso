@@ -106,6 +106,7 @@ export const ptBR: Record<string, string> = {
   "The family’s Secret Santas": "Amigos secretos da família",
   "Gathering the family’s plans…": "Reunindo os planos da família…",
   "Every tradition starts with someone.": "Toda tradição começa com alguém.",
+  "No Secret Santas to show yet.": "Ainda não há amigos secretos para mostrar.",
   "Create the first Secret Santa and give the family something to look forward to.":
     "Crie o primeiro amigo secreto e dê à família um motivo a mais para celebrar.",
   "Draw complete": "Sorteio realizado",
@@ -115,6 +116,8 @@ export const ptBR: Record<string, string> = {
   players: "participantes",
   "Open Secret Santa": "Ver amigo secreto",
   "Join the family": "Participar",
+  "Available to join": "Disponível para participar",
+  "Join an available Secret Santa": "Amigo secreto disponível para participação.",
   "YOUR SECRET SANTA": "SEU AMIGO SECRETO",
   "Close Secret Santa details": "Fechar detalhes do amigo secreto",
   "The names have been drawn.": "Os nomes já foram sorteados.",
@@ -135,6 +138,15 @@ export const ptBR: Record<string, string> = {
   " (you)": " (você)",
   "(you)": "(você)",
   "Leave this Secret Santa": "Sair deste amigo secreto",
+  "Edit draw date": "Editar data do sorteio",
+  "Save date": "Salvar data",
+  "Add player": "Adicionar participante",
+  "Choose a player": "Escolha uma pessoa",
+  Remove: "Remover",
+  "Delete Secret Santa": "Excluir amigo secreto",
+  "Draw date updated.": "Data do sorteio atualizada.",
+  "Secret Santa deleted.": "Amigo secreto excluído.",
+  "Choose a valid draw date and time.": "Escolha uma data e um horário válidos.",
   "START SOMETHING LOVELY": "COMECE ALGO ESPECIAL",
   "A surprise in the making.": "Uma surpresa a caminho.",
   "You bring the people. We’ll take care of the names.":
@@ -211,8 +223,16 @@ export const ptBR: Record<string, string> = {
   "Name must contain 1 to 120 characters":
     "O nome deve ter de 1 a 120 caracteres.",
   "Choose a future date and time": "Escolha uma data e um horário futuros.",
-  "A draw supports at most 500 players":
-    "Um sorteio pode ter no máximo 500 participantes.",
+  "A draw supports at most 100 players":
+    "Um sorteio pode ter no máximo 100 participantes.",
+  "YOUR SECRET WORD": "SUA PALAVRA SECRETA",
+  "Save this secret word. You’ll need it to check your match after the draw.":
+    "Guarde esta palavra secreta. Você vai precisar dela para consultar seu amigo secreto depois do sorteio.",
+  "Your secret word": "Sua palavra secreta",
+  "Reveal your match": "Revelar meu amigo secreto",
+  "Reveal my match": "Revelar meu amigo secreto",
+  "The draw details are unavailable for this invite.": "Não foi possível identificar este sorteio pelo convite.",
+  "The draw is full": "Este sorteio atingiu o limite de 100 participantes.",
   "Players must be distinct": "Não é possível repetir participantes.",
   "At least two players are required":
     "São necessários pelo menos dois participantes.",
@@ -220,7 +240,12 @@ export const ptBR: Record<string, string> = {
     "Um ou mais participantes não foram encontrados.",
   "Only registered players can view this Secret Santa":
     "Somente os participantes inscritos podem ver este amigo secreto.",
-  "This draw is full": "Este sorteio atingiu o limite de participantes.",
+  "This draw is full": "Este sorteio atingiu o limite de 100 participantes.",
+  "Draw date must be in the future": "A data do sorteio deve ser futura.",
+  "Draw date cannot be changed after it is due": "A data não pode ser alterada depois do horário do sorteio.",
+  "Cannot change a draw after it is due": "Não é possível alterar o sorteio depois do horário marcado.",
+  "Player not found": "Participante não encontrado.",
+  "Invalid draw date": "Data de sorteio inválida.",
   "The creator must stay in the draw":
     "Quem criou o amigo secreto deve permanecer no sorteio.",
   "You are not registered in this draw":

@@ -7,6 +7,7 @@ import { Shell, Loading } from "@/components/shell";
 import { GiftArt, Icon } from "@/components/icons";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate } from "@/lib/helpers";
+import { PhoneInput } from "@/components/phone-input";
 import type { Player, Santa } from "@/lib/types";
 export default function Home() {
   const { t, locale } = useLanguage();
@@ -42,7 +43,7 @@ export default function Home() {
   }
   if (!user) return <Loading error={t(error)} />;
   const upcoming = groups
-    .filter((g) => g.isParticipant && g.status === "SCHEDULED")
+    .filter((g) => (g.isParticipant || g.creatorId === user.id) && g.status === "SCHEDULED")
     .sort((a, b) => Date.parse(a.drawAt) - Date.parse(b.drawAt));
   return (
     <Shell user={user}>
@@ -136,16 +137,14 @@ export default function Home() {
           <form onSubmit={savePhone}>
             <label htmlFor="phone">{t("WhatsApp number")}</label>
             <div className="inline-form">
-              <input
+              <PhoneInput
                 id="phone"
                 name="phone"
-                type="tel"
                 required
-                minLength={10}
-                maxLength={24}
+                minLength={15}
+                maxLength={15}
                 inputMode="tel"
-                defaultValue={user.phoneNumber || ""}
-                placeholder="(11) 99999-9999"
+                initialValue={user.phoneNumber}
               />
               <button className="button" disabled={saving}>
                 {saving ? t("Saving…") : t("Save")}

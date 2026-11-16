@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api, errorMessage } from "@/lib/api";
 import { Brand } from "@/components/shell";
 import { GiftArt, Icon } from "@/components/icons";
+import { PhoneInput } from "@/components/phone-input";
 export default function AuthPage() {
   const { t } = useLanguage();
   const router = useRouter();
@@ -46,6 +47,7 @@ export default function AuthPage() {
             : { email: data.get("email"), password: data.get("password") },
         ),
       });
+      setBusy(false);
       router.replace("/");
     } catch (err) {
       setError(errorMessage(err));
@@ -160,15 +162,13 @@ export default function AuthPage() {
               <label>
                 {" "}
                 {t("WhatsApp number")}{" "}
-                <input
+                <PhoneInput
                   name="phoneNumber"
-                  type="tel"
                   autoComplete="tel"
                   required
-                  minLength={10}
-                  maxLength={24}
+                  minLength={15}
+                  maxLength={15}
                   inputMode="tel"
-                  placeholder="(11) 99999-9999"
                 />
                 <small>
                   {" "}

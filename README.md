@@ -55,5 +55,5 @@ labels, accessibility text and known API error messages follow that preference.
 
 Phone forms send `phoneNumber` as entered, including national numbers such as
 `(11) 99999-9999`. The API validates and normalizes the value, using country code
-`+55` when omitted. Account responses expose the UUID `userId` separately from
-the numeric player `id`, which remains the identifier used in draws.
+`+55` when omitted. Player IDs are UUIDs and are used for player references in
+draws; Secret Santa event IDs remain numeric.

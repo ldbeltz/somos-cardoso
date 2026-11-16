@@ -16,7 +16,7 @@ export default function SecretSantaPage() {
   const { user, error: sessionError } = useSession();
   const [groups, setGroups] = useState<Santa[]>([]),
     [players, setPlayers] = useState<Player[]>([]),
-    [selected, setSelected] = useState<number[]>([]),
+    [selected, setSelected] = useState<string[]>([]),
     [detail, setDetail] = useState<SantaDetail | null>(null),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
@@ -25,6 +25,21 @@ export default function SecretSantaPage() {
     [copied, setCopied] = useState(false);
   const [now, setNow] = useState(0);
   const [drawAt, setDrawAt] = useState("");
+  const isAdmin = user?.role === "ADMIN";
+  const visibleGroups = groups
+    .filter((group) => isAdmin || group.isParticipant || group.creatorId === user?.id)
+    .sort((a, b) => Date.parse(b.drawAt) - Date.parse(a.drawAt));
+  const joinableGroups = !isAdmin && user
+    ? groups.filter((group) =>
+        !group.isParticipant &&
+        group.creatorId !== user.id &&
+        group.status === "SCHEDULED" &&
+        Date.parse(group.drawAt) > now,
+      )
+    : [];
+  const listedGroups = [...visibleGroups, ...joinableGroups].sort(
+    (a, b) => Date.parse(b.drawAt) - Date.parse(a.drawAt),
+  );
   const detailId = detail?.id;
   const inviteUrl = detail?.inviteToken
     ? `/secret-santa/invite/${encodeURIComponent(detail.inviteToken)}`
@@ -38,14 +53,17 @@ export default function SecretSantaPage() {
   async function reload() {
     const [s, p] = await Promise.all([
       api<Santa[]>("/secret-santas"),
-      api<Player[]>("/players"),
+      isAdmin ? api<Player[]>("/players") : Promise.resolve([] as Player[]),
     ]);
     setGroups(s);
     setPlayers(p);
   }
   useEffect(() => {
     if (!user) return;
-    Promise.all([api<Santa[]>("/secret-santas"), api<Player[]>("/players")])
+    Promise.all([
+      api<Santa[]>("/secret-santas"),
+      isAdmin ? api<Player[]>("/players") : Promise.resolve([] as Player[]),
+    ])
       .then(([s, p]) => {
         setGroups(s);
         setPlayers(p);
@@ -53,7 +71,7 @@ export default function SecretSantaPage() {
       })
       .catch((err) => setError(errorMessage(err)))
       .finally(() => setLoading(false));
-  }, [user]);
+  }, [user, isAdmin]);
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(() => {
@@ -111,11 +129,9 @@ export default function SecretSantaPage() {
     setBusy(true);
     setError("");
     try {
-      if (!group.isParticipant) {
-        await api(`/secret-santas/${group.id}/join`, { method: "POST" });
-        await reload();
-      }
       setDetail(await api<SantaDetail>(`/secret-santas/${group.id}`));
+      const date = new Date(group.drawAt);
+      setDrawAt(new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401)
         router.replace("/auth");
@@ -123,6 +139,15 @@ export default function SecretSantaPage() {
     } finally {
       setBusy(false);
     }
+  }
+  async function join(group: Santa) {
+    setBusy(true); setError("");
+    try {
+      await api(`/secret-santas/${group.id}/players`, { method: "POST", body: JSON.stringify({ playerId: user!.id }) });
+      await reload();
+      setDetail(await api<SantaDetail>(`/secret-santas/${group.id}`));
+    } catch (err) { setError(errorMessage(err)); }
+    finally { setBusy(false); }
   }
   async function leave() {
     if (!detail) return;
@@ -139,134 +164,35 @@ export default function SecretSantaPage() {
       setBusy(false);
     }
   }
+  async function saveDrawAt(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (!detail) return;
+    setBusy(true); setError("");
+    try {
+      const instant = new Date(drawAt);
+      if (!drawAt || !Number.isFinite(instant.getTime())) throw new Error("Choose a valid draw date and time.");
+      await api(`/secret-santas/${detail.id}`, { method: "PUT", body: JSON.stringify({ drawAt: instant.toISOString() }) });
+      setDetail(await api<SantaDetail>(`/secret-santas/${detail.id}`)); await reload(); setNotice("Draw date updated.");
+    } catch (err) { setError(errorMessage(err)); }
+    finally { setBusy(false); }
+  }
+  async function removePlayer(playerId: string) {
+    if (!detail) return; setBusy(true); setError("");
+    try { await api(`/secret-santas/${detail.id}/players/${encodeURIComponent(playerId)}`, { method: "DELETE" }); setDetail(await api<SantaDetail>(`/secret-santas/${detail.id}`)); await reload(); }
+    catch (err) { setError(errorMessage(err)); } finally { setBusy(false); }
+  }
+  async function addPlayer(playerId: string) {
+    if (!detail) return; setBusy(true); setError("");
+    try { await api(`/secret-santas/${detail.id}/players`, { method: "POST", body: JSON.stringify({ playerId }) }); setDetail(await api<SantaDetail>(`/secret-santas/${detail.id}`)); await reload(); }
+    catch (err) { setError(errorMessage(err)); } finally { setBusy(false); }
+  }
+  async function deleteDraw() {
+    if (!detail) return; setBusy(true); setError("");
+    try { await api(`/secret-santas/${detail.id}`, { method: "DELETE" }); setDetail(null); await reload(); setNotice("Secret Santa deleted."); }
+    catch (err) { setError(errorMessage(err)); } finally { setBusy(false); }
+  }
   if (!user) return <Loading error={sessionError} />;
-  return (
-    <Shell user={user}>
-      <section className="page-heading santa-heading">
-        <div>
-          <span className="eyebrow">{t("A LITTLE CHRISTMAS MAGIC")}</span>
-          <h1>
-            {" "}
-            {t("It’s a secret.")} <br />
-            <em>{t("Until it isn’t.")}</em>
-          </h1>
-          <p className="muted">
-            {" "}
-            {t("One name. One thoughtful gift. A surprise for everyone.")}{" "}
-          </p>
-        </div>
-        <div className="heading-seal" aria-hidden="true">
-          <Icon name="gift" size={44} />
-          <span>{t("GIVEN WITH LOVE")}</span>
-        </div>
-      </section>
-      <div className="steps-strip">
-        <span>
-          <b>01</b> {t("Bring your people")}{" "}
-        </span>
-        <span>
-          <b>02</b> {t("Set the draw date")}{" "}
-        </span>
-        <span>
-          <b>03</b> {t("Get your match on WhatsApp")}{" "}
-        </span>
-      </div>
-      {error && (
-        <p className="error" role="alert">
-          {t(error)}
-        </p>
-      )}
-      {notice && (
-        <p className="success" role="status">
-          {t(notice)}
-        </p>
-      )}
-      {!user.phoneNumber && (
-        <p className="warning">
-          {" "}
-          {t("Add your WhatsApp number on the")}{" "}
-          <Link href="/">{t("home page")}</Link>{" "}
-          {t("before creating or joining a draw.")}{" "}
-        </p>
-      )}
-      <div className="santa-grid">
-        <section>
-          <div className="section-title">
-            <h2>{t("The family’s Secret Santas")}</h2>
-            <span className="count">{groups.length}</span>
-          </div>
-          {loading ? (
-            <p role="status" className="panel">
-              {" "}
-              {t("Gathering the family’s plans…")}{" "}
-            </p>
-          ) : groups.length === 0 ? (
-            <div className="empty-state">
-              <span className="empty-icon">
-                <Icon name="gift" size={36} />
-              </span>
-              <h3>{t("Every tradition starts with someone.")}</h3>
-              <p className="muted">
-                {" "}
-                {t(
-                  "Create the first Secret Santa and give the family something to look forward to.",
-                )}{" "}
-              </p>
-            </div>
-          ) : (
-            <div className="group-list">
-              {groups.map((group) => (
-                <article
-                  className={`group-card ${detail?.id === group.id ? "selected" : ""}`}
-                  key={group.id}
-                >
-                  <div className="group-card-top">
-                    <span
-                      className={`badge ${group.status === "DRAWN" ? "drawn" : group.status === "NOT_DRAWN" ? "not-drawn" : ""}`}
-                    >
-                      {group.status === "DRAWN"
-                        ? t("Draw complete")
-                        : group.status === "NOT_DRAWN"
-                          ? t("Not drawn")
-                          : t("Upcoming draw")}
-                    </span>
-                    {group.isParticipant && (
-                      <span className="member-label">{t("You’re in")}</span>
-                    )}
-                  </div>
-                  <h3>{group.name}</h3>
-                  <p>
-                    <Icon name="calendar" size={16} />
-                    {formatDate(group.drawAt, locale)}
-                  </p>
-                  <div className="group-card-bottom">
-                    <span>
-                      <Icon name="people" size={17} />
-                      {group.playerCount} {t("players")}{" "}
-                    </span>
-                    <button
-                      className="text-link"
-                      disabled={
-                        busy ||
-                        (!group.isParticipant &&
-                          (group.status === "DRAWN" ||
-                            Date.parse(group.drawAt) <= now ||
-                            !user.phoneNumber))
-                      }
-                      onClick={() => open(group)}
-                    >
-                      {group.isParticipant
-                        ? t("Open Secret Santa")
-                        : t("Join the family")}
-                      <Icon name="arrow" size={17} />
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-          {detail && (
-            <section className="detail-panel" aria-labelledby="detail-title">
+  const detailPanel = detail ? (
+            <section className="detail-panel detail-open-animation" aria-label={t("YOUR SECRET SANTA")}>
               <div className="section-title">
                 <span className="eyebrow">{t("YOUR SECRET SANTA")}</span>
                 <button
@@ -278,7 +204,6 @@ export default function SecretSantaPage() {
                   ×
                 </button>
               </div>
-              <h2 id="detail-title">{detail.name}</h2>
               {detail.status !== "NOT_DRAWN" && (
                 <p className="muted">
                   {detail.status === "DRAWN"
@@ -356,15 +281,21 @@ export default function SecretSantaPage() {
                     <b>{initials(p.name)}</b>
                     {p.name}
                     {p.id === user.id ? t(" (you)") : ""}
+                    {isAdmin && detail.status === "SCHEDULED" && Date.parse(detail.drawAt) > now && p.id !== detail.creatorId && <button type="button" className="chip-remove" aria-label={`${t("Remove")} ${p.name}`} disabled={busy} onClick={() => removePlayer(p.id)}>×</button>}
                   </span>
                 ))}
               </div>
-              {detail.creatorId !== user.id &&
+              {isAdmin && <div className="admin-controls">
+                {detail.status === "SCHEDULED" && Date.parse(detail.drawAt) > now && <form onSubmit={saveDrawAt}><span className="field-label">{t("Edit draw date")}</span><DrawDatePicker locale={locale} value={drawAt || detail.drawAt} onChange={setDrawAt} label={t("Date and time (dd/mm/yyyy HH:mm)")} /><button className="button" disabled={busy}>{t("Save date")}</button></form>}
+                {detail.status === "SCHEDULED" && Date.parse(detail.drawAt) > now && <label>{t("Add player")}<select defaultValue="" disabled={busy} onChange={(event) => { const playerId = event.currentTarget.value; if (playerId) { void addPlayer(playerId); event.currentTarget.value = ""; } }}><option value="">{t("Choose a player")}</option>{players.filter((player) => !detail.players.some((p) => p.id === player.id)).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
+                <button type="button" className="text-link danger" disabled={busy} onClick={deleteDraw}>{t("Delete Secret Santa")}</button>
+              </div>}
+              {detail.isParticipant && detail.creatorId !== user.id &&
                 detail.status === "SCHEDULED" &&
                 Date.parse(detail.drawAt) > now && (
                   <button
                     className="text-link danger"
-                    disabled={busy || detail.playerCount <= 2}
+                    disabled={busy}
                     onClick={leave}
                   >
                     {" "}
@@ -372,9 +303,127 @@ export default function SecretSantaPage() {
                   </button>
                 )}
             </section>
+  ) : null;
+  return (
+    <Shell user={user}>
+      <section className="page-heading santa-heading">
+        <div>
+          <span className="eyebrow">{t("A LITTLE CHRISTMAS MAGIC")}</span>
+          <h1>
+            {" "}
+            {t("It’s a secret.")} <br />
+            <em>{t("Until it isn’t.")}</em>
+          </h1>
+          <p className="muted">
+            {" "}
+            {t("One name. One thoughtful gift. A surprise for everyone.")}{" "}
+          </p>
+        </div>
+        <div className="heading-seal" aria-hidden="true">
+          <Icon name="gift" size={44} />
+          <span>{t("GIVEN WITH LOVE")}</span>
+        </div>
+      </section>
+      <div className="steps-strip">
+        <span>
+          <b>01</b> {t("Bring your people")}{" "}
+        </span>
+        <span>
+          <b>02</b> {t("Set the draw date")}{" "}
+        </span>
+        <span>
+          <b>03</b> {t("Get your match on WhatsApp")}{" "}
+        </span>
+      </div>
+      {error && (
+        <p className="error" role="alert">
+          {t(error)}
+        </p>
+      )}
+      {notice && (
+        <p className="success" role="status">
+          {t(notice)}
+        </p>
+      )}
+      {!user.phoneNumber && (
+        <p className="warning">
+          {" "}
+          {t("Add your WhatsApp number on the")}{" "}
+          <Link href="/">{t("home page")}</Link>{" "}
+          {t("before creating or joining a draw.")}{" "}
+        </p>
+      )}
+      <div className={`santa-grid ${isAdmin ? "admin-view" : "player-view"}`}>
+        <section>
+          <div className="section-title">
+            <h2>{t("The family’s Secret Santas")}</h2>
+            <span className="count">{visibleGroups.length}</span>
+          </div>
+          {loading ? (
+            <p role="status" className="panel">
+              {" "}
+              {t("Gathering the family’s plans…")}{" "}
+            </p>
+          ) : listedGroups.length === 0 ? (
+            <div className={`empty-state ${isAdmin ? "" : "player-empty-state"}`}>
+              <span className="empty-icon">
+                <Icon name="gift" size={36} />
+              </span>
+              <h3>{t(isAdmin ? "Every tradition starts with someone." : "No Secret Santas to show yet.")}</h3>
+              {isAdmin && <p className="muted">
+                {" "}
+                {t(
+                  "Create the first Secret Santa and give the family something to look forward to.",
+                )}{" "}
+              </p>}
+            </div>
+          ) : (
+            <div className="group-list">
+              {listedGroups.map((group) => {
+                const canViewGroup = isAdmin || group.isParticipant || group.creatorId === user.id;
+                return (
+                  <article
+                    key={group.id}
+                    className={`group-card ${detail?.id === group.id ? "selected" : ""}`}
+                  >
+                    <div className="group-card-top">
+                      {canViewGroup ? (
+                        <span className={`badge ${group.status === "DRAWN" ? "drawn" : group.status === "NOT_DRAWN" ? "not-drawn" : ""}`}>
+                          {group.status === "DRAWN" ? t("Draw complete") : group.status === "NOT_DRAWN" ? t("Not drawn") : t("Upcoming draw")}
+                        </span>
+                      ) : <span className="badge">{t("Available to join")}</span>}
+                      {canViewGroup && group.isParticipant && (
+                        <span className="member-label">{t("You’re in")}</span>
+                      )}
+                    </div>
+                    {canViewGroup ? (
+                      <>
+                        <h3>{group.name}</h3>
+                        <p><Icon name="calendar" size={16} />{formatDate(group.drawAt, locale)}</p>
+                      </>
+                    ) : <p className="joinable-description">{t("Join an available Secret Santa")}</p>}
+                    <div className="group-card-bottom">
+                      {canViewGroup && (
+                        <span><Icon name="people" size={17} />{group.playerCount} {t("players")}</span>
+                      )}
+                      {!canViewGroup ? (
+                        <button className="text-link" disabled={busy || !user.phoneNumber} onClick={() => join(group)}>
+                          {t("Join the family")}<Icon name="arrow" size={17} />
+                        </button>
+                      ) : (
+                        <button className="text-link" disabled={busy} onClick={() => open(group)}>
+                          {t("Open Secret Santa")}<Icon name="arrow" size={17} />
+                        </button>
+                      )}
+                    </div>
+                    {detail?.id === group.id && detailPanel}
+                  </article>
+                );
+              })}
+            </div>
           )}
         </section>
-        <aside className="create-panel">
+        {isAdmin && <aside className="create-panel">
           <span className="section-kicker">
             <Icon name="star" /> {t("START SOMETHING LOVELY")}{" "}
           </span>
@@ -483,7 +532,7 @@ export default function SecretSantaPage() {
               {t("Each match is shared privately.")}{" "}
             </p>
           </div>
-        </aside>
+        </aside>}
       </div>
     </Shell>
   );

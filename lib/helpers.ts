@@ -7,11 +7,21 @@ export function initials(name: string): string {
     .join("")
     .toUpperCase();
 }
+export function formatBrazilianPhone(value: string): string {
+  let digits = value.replace(/\D/g, "");
+  if (digits.startsWith("55") && digits.length >= 13) digits = digits.slice(2);
+  digits = digits.slice(0, 11);
+  if (!digits) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  const area = digits.slice(0, 2);
+  const subscriber = digits.slice(2);
+  return `(${area}) ${subscriber.slice(0, 5)}${subscriber.length > 5 ? `-${subscriber.slice(5)}` : ""}`;
+}
 export function createPayload(
   name: string,
   localDate: string,
-  selectedIds: number[],
-  creatorId: number,
+  selectedIds: string[],
+  creatorId: string,
   now = Date.now(),
 ) {
   const playerIds = [...new Set([creatorId, ...selectedIds])];

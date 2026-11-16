@@ -38,6 +38,7 @@ export function Shell({
     setBusy(true);
     try {
       await api("/auth/logout", { method: "POST" });
+      setBusy(false);
       router.replace("/auth");
     } catch (err) {
       setError(errorMessage(err));

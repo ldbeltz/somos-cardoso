@@ -5,9 +5,19 @@ import { Brand } from "@/components/shell";
 import { LanguageSwitcher, useLanguage } from "@/components/language";
 import { ApiError, api, errorMessage } from "@/lib/api";
 import { formatDate } from "@/lib/helpers";
+import { PhoneInput } from "@/components/phone-input";
 
 type InviteStatus = "SCHEDULED" | "DRAWN" | "NOT_DRAWN";
-type Invite = { name: string; drawAt: string; status: InviteStatus };
+type Invite = {
+  id?: number;
+  secretSantaId?: number;
+  name: string;
+  drawAt: string;
+  status: InviteStatus;
+  myWord?: string | null;
+  word?: string | null;
+  secretWord?: string | null;
+};
 
 export default function SecretSantaInvite({ token }: { token: string }) {
   const { t, locale } = useLanguage();
@@ -16,10 +26,15 @@ export default function SecretSantaInvite({ token }: { token: string }) {
   const [joined, setJoined] = useState(false);
   const [registrationClosed, setRegistrationClosed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [secretWord, setSecretWord] = useState("");
+  const [recipientName, setRecipientName] = useState("");
 
   useEffect(() => {
     api<Invite>(`/secret-santas/invites/${encodeURIComponent(token)}`)
-      .then(setInvite)
+      .then((loadedInvite) => {
+        setInvite(loadedInvite);
+        setSecretWord(loadedInvite.myWord || loadedInvite.word || loadedInvite.secretWord || "");
+      })
       .catch((err) => setError(errorMessage(err)));
   }, [token]);
 
@@ -40,6 +55,7 @@ export default function SecretSantaInvite({ token }: { token: string }) {
         },
       );
       setInvite(result);
+      setSecretWord(result.myWord || result.word || result.secretWord || "");
       setJoined(true);
     } catch (err) {
       const message = errorMessage(err);
@@ -56,6 +72,32 @@ export default function SecretSantaInvite({ token }: { token: string }) {
       } else {
         setError(message);
       }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reveal(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!invite) return;
+    const santaId = invite.secretSantaId ?? invite.id;
+    if (!santaId) {
+      setError("The draw details are unavailable for this invite.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api<{ id: string; name: string }>(
+        `/secret-santas/${santaId}/reveal`,
+        {
+          method: "POST",
+          body: JSON.stringify({ word: secretWord.trim() }),
+        },
+      );
+      setRecipientName(result.name);
+    } catch (err) {
+      setError(errorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -89,9 +131,22 @@ export default function SecretSantaInvite({ token }: { token: string }) {
                 </p>
               ) : null}
               {joined ? (
-                <p className="success" role="status">
-                  {t("You’re in! You’ve joined this Secret Santa.")}
-                </p>
+                <>
+                  <p className="success" role="status">
+                    {t("You’re in! You’ve joined this Secret Santa.")}
+                  </p>
+                  {(invite.myWord || invite.word || invite.secretWord) && (
+                    <>
+                      <div className="secret-word" role="status">
+                        <span className="eyebrow">{t("YOUR SECRET WORD")}</span>
+                        <strong>{invite.myWord || invite.word || invite.secretWord}</strong>
+                      </div>
+                      <p className="warning" role="note">
+                        {t("Save this secret word. You’ll need it to check your match after the draw.")}
+                      </p>
+                    </>
+                  )}
+                </>
               ) : invite.status === "SCHEDULED" && !registrationClosed ? (
                 <form onSubmit={join}>
                   <h2>{t("Join the Secret Santa")}</h2>
@@ -106,12 +161,12 @@ export default function SecretSantaInvite({ token }: { token: string }) {
                   </label>
                   <label>
                     {t("WhatsApp phone number")}
-                    <input
+                    <PhoneInput
                       name="phoneNumber"
-                      type="tel"
                       autoComplete="tel"
                       inputMode="tel"
-                      placeholder="+55 11 99999-9999"
+                      minLength={15}
+                      maxLength={15}
                       required
                     />
                     <small>
@@ -128,6 +183,32 @@ export default function SecretSantaInvite({ token }: { token: string }) {
                   </button>
                 </form>
               ) : null}
+              <div id="result">
+              {invite.status === "DRAWN" && (
+                recipientName ? (
+                  <div className="recipient">
+                    <span className="eyebrow">{t("YOU’RE GIVING A GIFT TO")}</span>
+                    <strong>{recipientName}</strong>
+                  </div>
+                ) : (
+                  <form onSubmit={reveal}>
+                    <h2>{t("Reveal your match")}</h2>
+                    <label>
+                      {t("Your secret word")}
+                      <input
+                        value={secretWord}
+                        onChange={(event) => setSecretWord(event.currentTarget.value)}
+                        required
+                      />
+                    </label>
+                    {error && <p className="error" role="alert">{t(error)}</p>}
+                    <button className="button full" disabled={busy}>
+                      {busy ? t("One moment…") : t("Reveal my match")}
+                    </button>
+                  </form>
+                )
+              )}
+              </div>
             </>
           ) : (
             <>

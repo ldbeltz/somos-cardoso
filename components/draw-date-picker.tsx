@@ -28,11 +28,12 @@ export function DrawDatePicker({
   onChange: (value: string) => void;
   label: string;
 }) {
-  const [datePart, timePart = "19:00"] = value.split("T");
-  const [hour = "19", minute = "00"] = timePart.split(":");
+  const [datePart, timePart = ""] = value.split("T");
+  const [hour = "", minute = ""] = timePart.split(":");
   const hourNumber = Number(hour);
-  const pickerValue =
-    locale === "pt-BR"
+  const pickerValue = !hour || !minute
+    ? ""
+    : locale === "pt-BR"
       ? `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`
       : `${hourNumber % 12 || 12}:${minute.padStart(2, "0")} ${hourNumber < 12 ? "AM" : "PM"}`;
   const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
@@ -54,7 +55,7 @@ export function DrawDatePicker({
             value={selectedDate}
             onValueChange={({ value: dates }) => {
               const nextDate = dates[0]?.toString() ?? "";
-              onChange(nextDate ? `${nextDate}T${timePart}` : "");
+              onChange(nextDate ? `${nextDate}${timePart ? `T${timePart}` : ""}` : "");
             }}
           >
             <DatePicker.Control>
